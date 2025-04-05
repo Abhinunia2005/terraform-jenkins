@@ -27,30 +27,28 @@ pipeline {
             }
         }
 
-        stage('Publish .NET 8 Web API') {
-    steps {
-        dir('webapi') {
-            bat 'dotnet publish -c Release -o out'
-            bat 'powershell Compress-Archive -Path out\\* -DestinationPath ..\\webapi.zip'
+        stage('Publish and Deploy .NET 8 Web API') {
+            steps {
+                dir('webapi') {
+                    bat 'dotnet publish -c Release -o out'
+
+                    // Clean old zip if it exists
+                    bat 'if exist ..\\webapi.zip del ..\\webapi.zip'
+
+                    // Create fresh zip from published output
+                    bat 'powershell Compress-Archive -Path out\\* -DestinationPath ..\\webapi.zip'
+                }
+
+                // Now deploy using the zip file
+                bat 'az webapp deploy --resource-group terraform-jenkins --name terraform8414jenkins --src-path webapi.zip --type zip'
+            }
         }
     }
-}
 
-
-        stage('Deploy to Azure App Service') {
-            steps {
-                withCredentials([azureServicePrincipal(
-                    credentialsId: 'AZURE_CREDENTIALS',
-                    subscriptionIdVariable: 'ARM_SUBSCRIPTION_ID',
-                    clientIdVariable: 'ARM_CLIENT_ID',
-                    clientSecretVariable: 'ARM_CLIENT_SECRET',
-                    tenantIdVariable: 'ARM_TENANT_ID'
-                )]) {
-                    bat 'az login --service-principal -u %ARM_CLIENT_ID% -p %ARM_CLIENT_SECRET% --tenant %ARM_TENANT_ID%'
-                    bat 'az account set --subscription %ARM_SUBSCRIPTION_ID%'
-                    bat 'az webapp deploy --resource-group terraform-jenkins --name terraform8414jenkins --src-path webapi.zip --type zip'
-                }
-            }
+    post {
+        always {
+            echo 'Pipeline finished'
+            // Add any cleanup or notifications here
         }
     }
 }
