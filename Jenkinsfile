@@ -28,12 +28,14 @@ pipeline {
         }
 
         stage('Publish .NET 8 Web API') {
-            steps {
-                dir('webapi') {
-                    bat 'dotnet publish -c Release -o out'
-                }
-            }
+    steps {
+        dir('webapi') {
+            bat 'dotnet publish -c Release -o out'
+            bat 'powershell Compress-Archive -Path out\\* -DestinationPath ..\\webapi.zip'
         }
+    }
+}
+
 
         stage('Deploy to Azure App Service') {
             steps {
@@ -46,7 +48,7 @@ pipeline {
                 )]) {
                     bat 'az login --service-principal -u %ARM_CLIENT_ID% -p %ARM_CLIENT_SECRET% --tenant %ARM_TENANT_ID%'
                     bat 'az account set --subscription %ARM_SUBSCRIPTION_ID%'
-                    bat 'az webapp deploy --resource-group terraform-jenkins --name terraform8414jenkins --src-path webapi\\out --type zip'
+                    bat 'az webapp deploy --resource-group terraform-jenkins --name terraform8414jenkins --src-path webapi.zip --type zip'
                 }
             }
         }
