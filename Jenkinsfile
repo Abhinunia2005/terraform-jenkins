@@ -27,31 +27,23 @@ pipeline {
             }
         }
 
-        stage('Publish and Deploy .NET 8 Web API') {
+        stage('Publish and Fake Deploy .NET 8 Web API') {
             steps {
                 dir('webapi') {
                     bat 'dotnet publish -c Release -o out'
-
-                    // Clean old zip if it exists
                     bat 'if exist ..\\webapi.zip del ..\\webapi.zip'
-
-                    // Create fresh zip from published output
                     bat 'powershell Compress-Archive -Path out\\* -DestinationPath ..\\webapi.zip'
                 }
 
-                // Actual deploy using zip file
-                bat 'az webapp deploy --resource-group terraform-jenkins --name terraform8414jenkins --src-path webapi.zip --type zip'
-            }
-        }
-
-        stage('Deploy to Azure App Service') {
-            steps {
-                echo 'Starting simulated Azure deployment...'
-                echo 'az login --service-principal -u %ARM_CLIENT_ID% -p %ARM_CLIENT_SECRET% --tenant %ARM_TENANT_ID%'
-                echo 'az account set --subscription %ARM_SUBSCRIPTION_ID%'
+                // Simulate a deploy instead of doing the real one
                 echo 'az webapp deploy --resource-group terraform-jenkins --name terraform8414jenkins --src-path webapi.zip --type zip'
+                echo 'WARNING: Initiating deployment'
+                echo 'WARNING: Deploying from local path: webapi.zip'
+                echo 'WARNING: Warming up Kudu before deployment.'
+                echo 'WARNING: Warmed up Kudu instance successfully.'
+                echo 'Simulating deployment...'
                 sleep time: 60, unit: 'SECONDS'
-                echo 'Simulated deployment completed.'
+                echo 'Deployment succeeded (faked).'
             }
         }
     }
@@ -59,7 +51,6 @@ pipeline {
     post {
         always {
             echo 'Pipeline finished'
-            // Add any cleanup or notifications here
         }
     }
 }
